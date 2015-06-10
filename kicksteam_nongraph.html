@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.tick {
+  display:none;
+}
+
+.titletext{
+  font-family: sans-serif;
+  font-size: 10px;
+  font-color: #333;
+  text-shadow: 5px #000000;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #e7e7e7;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+#tooltip {
+  position: absolute;
+  width: 200px;
+  height: auto;
+  padding: 10px;
+  background-color: white;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+  -mox-box-shadow: 4px 4px 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 4px 10px rbga(0, 0, 0, 0.4) pointer-events: none;
+}
+
+#tooltip.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#tooltip p {
+  margin: 0;
+  font-family: sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+</style>
+<body>
+  <div id="tooltip" class="hidden">
+    <p><span id="title"></span></p>
+    <p><img id="bannerimg"></img></p>
+    <p>Score: <span id="score"></span>%</p>
+    <p>Funding: $<span id="pledged"></span></p>
+  </div>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script>
+
+    var margin = {top: 20, right: 20, bottom: 20, left: 20},
+    padding = {top: 0, right: 0, bottom: 0, left: 0},
+    outerWidth = 960,
+    outerHeight = 500,
+    innerWidth = outerWidth - margin.left - margin.right,
+    innerHeight = outerHeight - margin.top - margin.bottom,
+    width = innerWidth - padding.left - padding.right,
+    height = innerHeight - padding.top - padding.bottom;
+
+    var colorScale = d3.scale.category10();
+
+    var colorScale = d3.scale.threshold()
+    .domain([1500, 10000, 25000])
+    .range(["#fdc086", "#7fcdbb", "#2c7fb8"]);
+
+    var zScale = d3.scale.threshold()
+    .domain([1500, 10000, 25000])
+    .range([6, 12, 20]);
+
+    var xScale = d3.scale.log()
+    .base(12)
+    .domain([6000, 3440000])
+    .range([0, width]);
+
+    var yScale = d3.scale.linear()
+    .domain([0.6, 1])
+    .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient("bottom")
+    .ticks(20, ",.1s")
+    .tickSize(6, 0);
+
+    var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left")
+    .ticks(4)
+    .tickSize(6, 0);
+
+    var nodes = [];
+
+    var svg = d3.select("body").append("svg")
+    .attr("width", outerWidth)
+    .attr("height", outerHeight)
+    .attr("display", "block")
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.style("opacity", 1e-6)
+    .transition()
+    .duration(1000)
+    .style("opacity", 1);
+
+    svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height/2 + ")")
+    .call(xAxis);
+
+    svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(" + width/2 + ",0)")
+    .call(yAxis);
+
+    svg.append("text")
+    .text("The Blockbusters")
+    .attr("font-size", "30px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "start")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width * 0.6 + "," + height*0.4 + ")");
+
+    svg.append("text")
+    .text("The Flops")
+    .attr("font-size", "30px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "start")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width * 0.6 + "," + height*0.65 + ")");
+
+    svg.append("text")
+    .text("The Success Stories")
+    .attr("font-size", "30px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "end")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width * 0.4 + "," + height*0.4 + ")");
+
+    svg.append("text")
+    .text("The Letdowns")
+    .attr("font-size", "30px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "end")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width * 0.4 + "," + height*0.65 + ")");
+
+    svg.append("text")
+    .text("More Funding")
+    .attr("font-size", "10px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "start")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width*.92 + "," + height*0.49 + ")");
+
+    svg.append("text")
+    .text("Less Funding")
+    .attr("font-size", "10px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "start")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width*.01 + "," + height*0.523 + ")");
+
+    svg.append("text")
+    .text("Lower Score")
+    .attr("font-size", "10px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "start")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width*0.512 + "," + height*0.986 + ")rotate(-90)");
+
+    svg.append("text")
+    .text("Higher Score")
+    .attr("font-size", "10px")
+    .attr("font-family", "sans-serif")
+    .attr("text-anchor", "start")
+    .attr("fill", "#e7e7e7")
+    .attr("transform", "translate(" + width*0.495 + "," + height*0.14 + ")rotate(-90)");
+
+
+    d3.tsv("tsvofpos.tsv", function(error, tsv) {
+      if (error) return console.warn(error);
+      nodes = tsv;
+      console.log(nodes);
+      var circle_holds = svg.selectAll("circle")
+        .data(nodes)
+        .enter()
+        .append("g")
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+        .on("mouseover", function (d) {
+          d3.select("#tooltip")
+          .style("left", d3.event.pageX + "px")
+          .style("top", d3.event.pageY + "px")
+          .style("opacity", 1)
+          .select("#title")
+          .text(d.title);
+          d3.select("#tooltip")
+          .select("#score")
+          .text(d.score.slice(2,4));
+          d3.select("#tooltip")
+          .select("#pledged")
+          .text(d.pledged.replace(/\d{1,3}(?=(\d{3})+(?!\d))/g, "$&,"));
+          d3.select("#tooltip")
+          .select("#bannerimg")
+          .attr('src', d.bannerImgData);
+        })
+        .on("mouseout", function () {
+          // Hide the tooltip
+          d3.select("#tooltip")
+          .style("opacity", 0);});
+
+      circle_holds.append("circle")
+        .attr("r", function(d) { return zScale(d.totalReviews);})
+        .attr("opacity", ".70")
+        .style("fill", function(d) {
+          return colorScale(d.totalReviews); });
+
+      circle_holds.append("text")
+        .text(function(d) { if(d.totalReviews > 1500)return d.title;})
+        .attr("class", "titletext")
+        .attr("text-anchor", "middle")
+        .attr("dy", function(d) { return -zScale(d.totalReviews) - 5;});
+
+    });
+
+  </script>
+<body>
+</html>
